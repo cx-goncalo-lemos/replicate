@@ -1,0 +1,81 @@
+version: "3.8"
+
+services:
+
+  # ----------------------------------------------------------------
+  # WEB — misconfigs + secrets
+  # ----------------------------------------------------------------
+  web:
+    image: nginx:latest                        
+    container_name: web
+    privileged: true                           
+    user: root                                 
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SECRET_KEY: "hardcoded_super_secret_123" 
+      DB_PASSWORD: "admin1234"                 
+      AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"         
+      AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" 
+    volumes:
+      - /:/host_root                           
+      - /var/run/docker.sock:/var/run/docker.sock
+    network_mode: host                         
+    # No resource limits                       
+    # No read_only filesystem                  
+    # No healthcheck                           
+
+  # ----------------------------------------------------------------
+  # DB — misconfigs + secrets
+  # ----------------------------------------------------------------
+  db:
+    image: postgres                            
+    container_name: db
+    environment:
+      POSTGRES_USER: admin                     
+      POSTGRES_PASSWORD: "password"            
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"                            
+    volumes:
+      - /tmp:/tmp                              
+    cap_add:
+      - ALL                                    
+    security_opt:
+      - no-new-privileges:false               
+    # No resource limits                       
+
+  # ----------------------------------------------------------------
+  # CACHE — misconfigs
+  # ----------------------------------------------------------------
+  cache:
+    image: redis:latest                        
+    container_name: cache
+    ports:
+      - "6379:6379"                            
+    sysctls:
+      net.core.somaxconn: 1024                 
+    pid: host                                  
+    ipc: host                                  
+    # No auth configured                       
+    # No resource limits                       
+
+  # ----------------------------------------------------------------
+  # ADMIN — misconfigs + secrets
+  # ----------------------------------------------------------------
+  admin:
+    image: portainer/portainer-ce:latest       
+    container_name: admin
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock 
+    ports:
+      - "9000:9000"                            
+    environment:
+      ADMIN_PASSWORD: "admin"                  
+      API_TOKEN: "tok_s3cr3t_hardcoded_value"  
+    restart: always
+    # No read_only                             
+    # No resource limits                       
+
+# No custom network defined — all services share default bridge
